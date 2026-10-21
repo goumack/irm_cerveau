@@ -52,13 +52,7 @@ python client.py --url http://localhost:8090 --image chemin\vers\irm.jpg
 docker rm -f vgg16
 ```
 
-## 2. Déployer sur OpenShift
 
-```powershell
-oc login --token=sha256~... --server=https://api.origins.heritage.africa:6443
-cd deploiement
-.\build-deployer.ps1 -Version 1.0.0
-```
 
 Étapes manuelles équivalentes :
 
