@@ -1,0 +1,22 @@
+# Notebooks contenant des identifiants S3 ou provenant d'autres auteurs : ne jamais publier
+2_save_model*.ipynb
+*.backup.ipynb
+brain-tumor-detection-avec-le-modele-vgg-16.ipynb
+
+# Artefacts locaux (regénérés par le notebook)
+*.keras
+*.h5
+modeles/
+nbexec.log
+*.log
+
+# Python / Jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Secrets
+.env
+*.env

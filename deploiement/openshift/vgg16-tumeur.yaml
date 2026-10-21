@@ -1,0 +1,97 @@
+# Déploiement OpenShift de l'API vgg16-tumeur
+# Image stockée dans le registre intégré d'OpenShift (même namespace) :
+# aucun secret de pull n'est nécessaire, le compte de service "default" du namespace y a accès.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vgg16-tumeur
+  namespace: senia-surveillance-gpu
+  labels:
+    app: vgg16-tumeur
+    app.kubernetes.io/part-of: sante-ia-senia
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vgg16-tumeur
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: vgg16-tumeur
+    spec:
+      containers:
+        - name: api
+          image: image-registry.openshift-image-registry.svc:5000/senia-surveillance-gpu/vgg16-tumeur:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: SEUIL
+              value: "0.5"
+            - name: THREADS
+              value: "2"
+          resources:
+            requests:
+              cpu: 500m
+              memory: 384Mi           # ~200 Mo mesurés en local, modèle chargé
+            limits:
+              cpu: "2"
+              memory: 1Gi
+          startupProbe:
+            httpGet: {path: /pret, port: http}
+            periodSeconds: 5
+            failureThreshold: 24          # jusqu'à 2 min pour charger le modèle
+          readinessProbe:
+            httpGet: {path: /pret, port: http}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /sante, port: http}
+            periodSeconds: 20
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vgg16-tumeur
+  namespace: senia-surveillance-gpu
+  labels:
+    app: vgg16-tumeur
+spec:
+  selector:
+    app: vgg16-tumeur
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: vgg16-tumeur
+  namespace: senia-surveillance-gpu
+  labels:
+    app: vgg16-tumeur
+  annotations:
+    haproxy.router.openshift.io/timeout: 60s
+spec:
+  to:
+    kind: Service
+    name: vgg16-tumeur
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

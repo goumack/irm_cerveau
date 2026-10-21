@@ -1,0 +1,6 @@
+**/__pycache__
+**/*.pyc
+openshift/
+*.ps1
+*.md
+client.py
